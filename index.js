@@ -9,6 +9,8 @@ const goodbye = require('graceful-goodbye')
 const express = require('express')
 const safetyCatch = require('safety-catch')
 
+let closing = false
+
 function loadConfig () {
   return {
     wsPort: process.WS_PORT || 8080,
@@ -59,6 +61,15 @@ function setupMetricsServer (port, host, logger) {
     try {
       res.set('Content-Type', promClient.register.contentType)
       res.end(await promClient.register.metrics())
+    } catch (e) {
+      next(e)
+    }
+  })
+
+  app.get('/health', async function (req, res, next) {
+    try {
+      if (closing) res.status(503).send('Closing')
+      else res.status(200).send('Healthy')
     } catch (e) {
       next(e)
     }
@@ -119,6 +130,7 @@ async function main () {
   logger.info(`Indicated DHT port: ${dht.port}`)
 
   goodbye(async () => {
+    closing = true
     logger.info('Closing down DHT')
     try {
       await dht.destroy()
