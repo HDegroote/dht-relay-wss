@@ -6,17 +6,21 @@ const { WebSocketServer } = require('ws')
 const Stream = require('@hyperswarm/dht-relay/ws')
 const promClient = require('prom-client')
 const goodbye = require('graceful-goodbye')
+const express = require('express')
+const safetyCatch = require('safety-catch')
 
 function loadConfig () {
   return {
     wsPort: process.WS_PORT || 8080,
     dhtPort: process.DHT_PORT,
-    logLevel: process.LOG_LEVEL || 'info'
+    logLevel: process.LOG_LEVEL || 'info',
+    host: process.HOST,
+    sShutdownMargin: process.S_SHUTD0WN_MARGIN || 10
   }
 }
 
-function setupRelayServer (wsPort, dht, logger) {
-  const server = new WebSocketServer({ port: wsPort })
+function setupRelayServer (wsPort, host, dht, logger) {
+  const server = new WebSocketServer({ port: wsPort, host })
 
   // TODO: decide whether to listen for server error events
 
@@ -40,11 +44,67 @@ function setupRelayServer (wsPort, dht, logger) {
     socket.send('You are being relayed')
   })
 
+  server.once('listening', () => {
+    const address = server.address()
+    logger.info(`Relay server listening on ${address.address} on port ${address.port}`)
+  })
+
   return server
 }
 
+function setupMetricsServer (port, host, logger) {
+  const app = express()
+
+  app.get('/metrics', async function (req, res, next) {
+    try {
+      res.set('Content-Type', promClient.register.contentType)
+      res.end(await promClient.register.metrics())
+    } catch (e) {
+      next(e)
+    }
+  })
+
+  const listener = app.listen(port, host)
+  listener.once('listening', () => {
+    const address = listener.address()
+    logger.info(`Metrics server listening on ${address.address} on port ${address.port}`)
+  })
+
+  return listener
+}
+
+async function closeWsServer (wsServer, logger, sShutdownMargin) {
+  logger.info('Closing down websocket server')
+  try {
+    const closeProm = new Promise(resolve => wsServer.close(resolve))
+    closeProm.catch(safetyCatch)
+
+    if (wsServer.clients.size > 0 && sShutdownMargin) {
+      logger.info(`Waiting to send close signals to existing clients for ${sShutdownMargin}s (shutdown margin)`)
+      await Promise.race([
+        new Promise(resolve => setTimeout(resolve, sShutdownMargin * 1000)),
+        closeProm // If all connections close before the timeout
+      ])
+    }
+
+    const nrRemainingClients = wsServer.clients.size
+    if (nrRemainingClients) {
+      logger.info(`force-closing connection to ${nrRemainingClients} clients`)
+      const goingAwayCode = 1001
+      for (const client of wsServer.clients) {
+        client.close(goingAwayCode, 'Server is going offline')
+      }
+    }
+
+    await closeProm
+  } catch (e) {
+    logger.error(e)
+  }
+  logger.info('Closed websocket server')
+}
+
 async function main () {
-  const { wsPort, dhtPort, logLevel } = loadConfig()
+  const { wsPort, dhtPort, logLevel, host, sShutdownMargin } = loadConfig()
   const logger = pino({ level: logLevel })
 
   logger.info('Starting program')
@@ -52,7 +112,8 @@ async function main () {
   promClient.collectDefaultMetrics()
 
   const dht = new DHT({ port: dhtPort })
-  const server = setupRelayServer(wsPort, dht, logger)
+  const wsServer = setupRelayServer(wsPort, host, dht, logger)
+  const metricsServer = setupMetricsServer(10000, host, logger)
 
   logger.info(`Running the relay on port ${wsPort}`)
   logger.info(`Indicated DHT port: ${dht.port}`)
@@ -67,13 +128,15 @@ async function main () {
 
     logger.info('Closed down DHT')
 
-    logger.info('Closing down websocket server')
+    await closeWsServer(wsServer, logger, sShutdownMargin)
+
+    logger.info('Closing down metrics server')
     try {
-      await new Promise(resolve => server.close(resolve))
+      await new Promise(resolve => metricsServer.close(resolve))
     } catch (e) {
       logger.error(e)
     }
-    logger.info('Closed websocket server')
+    logger.info('Closed metrics server')
 
     logger.info('Exiting program')
   })
