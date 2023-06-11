@@ -2,14 +2,12 @@ require('dotenv').config()
 const pino = require('pino')
 const DHT = require('@hyperswarm/dht')
 const { relay } = require('@hyperswarm/dht-relay')
-const { WebSocketServer } = require('ws')
 const Stream = require('@hyperswarm/dht-relay/ws')
 const goodbye = require('graceful-goodbye')
 const fastify = require('fastify')
 const safetyCatch = require('safety-catch')
 const metricsPlugin = require('fastify-metrics')
-
-let closing = false
+const websocketPlugin = require('@fastify/websocket')
 
 function loadConfig () {
   return {
@@ -21,80 +19,70 @@ function loadConfig () {
   }
 }
 
-function setupRelayServer (wsPort, host, dht, logger) {
-  const server = new WebSocketServer({ port: wsPort, host })
-
-  // TODO: decide whether to listen for server error events
-
-  server.on('connection', (socket, req) => {
-    // req is a http.IncomingMessage object
-    const ip = req.socket.remoteAddress
-    const port = req.socket.remotePort
-    const id = `${ip}--${port}`
-    socket.on('error', (error) => {
-      // Socket errors are often unexpected hang-ups etc, so we swallow them
-      logger.info(`Socket error for connection at ${id} (${error.message})`)
-    })
-
-    socket.on('close', () => {
-      logger.info(`Stopped relaying to ${id}`)
-    })
-
-    logger.info(`Relaying to ${id}`)
-    relay(dht, new Stream(false, socket))
-
-    socket.send('You are being relayed')
+function setupRelayServer (app, dht, logger, sShutdownMargin) {
+  // Note: need to define before creating the websocketPlugin
+  // to ensure our hook runs first. (We would like to override it,
+  // so it gives some margin to the existing sockets to close,
+  // but we can't override it, so we settle for going first)
+  app.addHook('preClose', async function () {
+    await closeWsServerConnections(app.websocketServer, logger, sShutdownMargin)
   })
 
-  server.once('listening', () => {
-    const address = server.address()
-    logger.info(`Relay server listening on ${address.address}:${address.port}`)
-  })
-
-  return server
-}
-
-async function setupMetricsServer (port, host, logger) {
-  const app = fastify({ logger })
-
-  await app.register(metricsPlugin, { endpoint: '/metrics' })
-
-  const healthOpts = {
-    response: {
-      200: {
-        const: 'Healthy'
-      },
-      503: {
-        const: 'Closing'
-      }
-    }
-  }
-  app.get('/health', healthOpts, function (req, reply) {
-    if (closing) {
-      reply.code(503)
-      reply.send('Closing')
-    } else {
-      reply.status(200)
-      reply.send('Healthy')
+  app.register(websocketPlugin, {
+    options: {
+      clientTracking: true
+    },
+    connectionOptions: {
+      readableObjectMode: true // See https://github.com/fastify/fastify-websocket/issues/185
     }
   })
 
-  const listener = await app.listen({
-    port,
-    host,
-    listenTextResolver: (address) => `Metrics server listening on ${address}`
+  app.register(async function (app) {
+    app.get('/', { websocket: true }, (connection, req) => {
+      const socket = connection.socket
+      const ip = req.socket.remoteAddress
+      const port = req.socket.remotePort
+
+      const id = `${ip}:${port}`
+      socket.on('error', (error) => {
+        // Socket errors are often unexpected hang-ups etc, so we swallow them
+        logger.info(`Socket error for connection at ${id} (${error.message})`)
+      })
+
+      socket.on('close', () => {
+        logger.info(`Stopped relaying to ${id}`)
+      })
+
+      logger.info(`Relaying to ${id}`)
+      relay(dht, new Stream(false, socket))
+
+      socket.send('You are being relayed')
+    })
   })
-  return listener
+
+  logger.info('Setup ws route')
 }
 
-async function closeWsServer (wsServer, logger, sShutdownMargin) {
-  logger.info('Closing down websocket server')
+function setupHealthEndpoint (app) {
+  app.get('/health', function (req, reply) {
+    reply.status(200)
+    reply.send('Healthy')
+  })
+}
+
+async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
+  logger.info('Closing websocket server connections')
   try {
     const closeProm = new Promise(resolve => wsServer.close(resolve))
     closeProm.catch(safetyCatch)
 
     if (wsServer.clients.size > 0 && sShutdownMargin) {
       logger.info(`Waiting to send close signals to existing clients for ${sShutdownMargin}s (shutdown margin)`)
+
+      for (const socket of wsServer.clients) {
+        socket.send(`Server closing. Socket will shut down in ${sShutdownMargin}s`)
+      }
+
       await Promise.race([
         new Promise(resolve => setTimeout(resolve, sShutdownMargin * 1000)),
         closeProm // If all connections close before the timeout
@@ -104,17 +92,16 @@ async function closeWsServer (wsServer, logger, sShutdownMargin) {
     const nrRemainingClients = wsServer.clients.size
     if (nrRemainingClients) {
       logger.info(`force-closing connection to ${nrRemainingClients} clients`)
+
       const goingAwayCode = 1001
       for (const client of wsServer.clients) {
         client.close(goingAwayCode, 'Server is going offline')
       }
     }
-
-    await closeProm
   } catch (e) {
     logger.error(e)
   }
-  logger.info('Closed websocket server')
+  logger.info('Closed websocket server connections')
 }
 
 async function main () {
@@ -124,10 +111,17 @@ async function main () {
   logger.info('Starting program')
 
   const dht = new DHT({ port: dhtPort })
-  const wsServer = setupRelayServer(wsPort, host, dht, logger)
-  const metricsServer = setupMetricsServer(10000, host, logger)
+  const app = fastify({ logger })
 
-  logger.info(`Running the relay on port ${wsPort}`)
+  setupRelayServer(app, dht, logger, sShutdownMargin)
+  await app.register(metricsPlugin, { endpoint: '/metrics' })
+  setupHealthEndpoint(app, logger)
+
+  await app.listen({
+    port: wsPort,
+    host
+  })
+
   logger.info(`Indicated DHT port: ${dht.port}`)
 
   goodbye(async () => {
@@ -141,15 +135,16 @@ async function main () {
 
     logger.info('Closed down DHT')
 
-    await closeWsServer(wsServer, logger, sShutdownMargin)
-
-    logger.info('Closing down metrics server')
+    logger.info('Closing down the overall server')
     try {
-      await new Promise(resolve => metricsServer.close(resolve))
+      await app.close()
     } catch (e) {
-      logger.error(e)
+      // TODO: cleaner shutdown of websocket server
+      // (currently always throws because websocket server
+      // has already been shutdown)
+      console.error('error while shutting down overall server:', e)
     }
-    logger.info('Closed metrics server')
+    logger.info('Closed down the overall server')
 
     logger.info('Exiting program')
   })

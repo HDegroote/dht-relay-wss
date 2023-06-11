@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/HDegroote/dht-relay-server#readme",
   "dependencies": {
+    "@fastify/websocket": "^8.1.0",
     "@hyperswarm/dht": "^6.5.1",
     "@hyperswarm/dht-relay": "^0.4.1",
     "dotenv": "^16.1.4",
@@ -26,8 +27,7 @@
     "hexkey-utils": "^1.2.1",
     "pino": "^8.14.1",
     "prom-client": "^14.2.0",
-    "safety-catch": "^1.0.2",
-    "ws": "^8.13.0"
+    "safety-catch": "^1.0.2"
   },
   "devDependencies": {
     "standard": "^17.1.0"
