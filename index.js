@@ -4,10 +4,10 @@ const DHT = require('@hyperswarm/dht')
 const { relay } = require('@hyperswarm/dht-relay')
 const { WebSocketServer } = require('ws')
 const Stream = require('@hyperswarm/dht-relay/ws')
-const promClient = require('prom-client')
 const goodbye = require('graceful-goodbye')
-const express = require('express')
+const fastify = require('fastify')
 const safetyCatch = require('safety-catch')
+const metricsPlugin = require('fastify-metrics')
 
 let closing = false
 
@@ -16,7 +16,7 @@ function loadConfig () {
     wsPort: process.WS_PORT || 8080,
     dhtPort: process.DHT_PORT,
     logLevel: process.LOG_LEVEL || 'info',
-    host: process.HOST,
+    host: process.HOST || '127.0.0.1',
     sShutdownMargin: process.S_SHUTD0WN_MARGIN || 10
   }
 }
@@ -48,39 +48,42 @@ function setupRelayServer (wsPort, host, dht, logger) {
 
   server.once('listening', () => {
     const address = server.address()
-    logger.info(`Relay server listening on ${address.address} on port ${address.port}`)
+    logger.info(`Relay server listening on ${address.address}:${address.port}`)
   })
 
   return server
 }
 
-function setupMetricsServer (port, host, logger) {
-  const app = express()
+async function setupMetricsServer (port, host, logger) {
+  const app = fastify({ logger })
 
-  app.get('/metrics', async function (req, res, next) {
-    try {
-      res.set('Content-Type', promClient.register.contentType)
-      res.end(await promClient.register.metrics())
-    } catch (e) {
-      next(e)
+  await app.register(metricsPlugin, { endpoint: '/metrics' })
+
+  const healthOpts = {
+    response: {
+      200: {
+        const: 'Healthy'
+      },
+      503: {
+        const: 'Closing'
+      }
+    }
+  }
+  app.get('/health', healthOpts, function (req, reply) {
+    if (closing) {
+      reply.code(503)
+      reply.send('Closing')
+    } else {
+      reply.status(200)
+      reply.send('Healthy')
     }
   })
 
-  app.get('/health', async function (req, res, next) {
-    try {
-      if (closing) res.status(503).send('Closing')
-      else res.status(200).send('Healthy')
-    } catch (e) {
-      next(e)
-    }
+  const listener = await app.listen({
+    port,
+    host,
+    listenTextResolver: (address) => `Metrics server listening on ${address}`
   })
-
-  const listener = app.listen(port, host)
-  listener.once('listening', () => {
-    const address = listener.address()
-    logger.info(`Metrics server listening on ${address.address} on port ${address.port}`)
-  })
-
   return listener
 }
 
@@ -119,8 +122,6 @@ async function main () {
   const logger = pino({ level: logLevel })
 
   logger.info('Starting program')
-
-  promClient.collectDefaultMetrics()
 
   const dht = new DHT({ port: dhtPort })
   const wsServer = setupRelayServer(wsPort, host, dht, logger)
