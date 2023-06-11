@@ -125,7 +125,6 @@ async function main () {
   logger.info(`Indicated DHT port: ${dht.port}`)
 
   goodbye(async () => {
-    closing = true
     logger.info('Closing down DHT')
     try {
       await dht.destroy()
