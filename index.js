@@ -1,5 +1,3 @@
-require('dotenv').config()
-const pino = require('pino')
 const DHT = require('@hyperswarm/dht')
 const { relay } = require('@hyperswarm/dht-relay')
 const Stream = require('@hyperswarm/dht-relay/ws')
@@ -8,16 +6,6 @@ const fastify = require('fastify')
 const safetyCatch = require('safety-catch')
 const metricsPlugin = require('fastify-metrics')
 const websocketPlugin = require('@fastify/websocket')
-
-function loadConfig () {
-  return {
-    wsPort: process.WS_PORT || 8080,
-    dhtPort: process.DHT_PORT,
-    logLevel: process.LOG_LEVEL || 'info',
-    host: process.HOST || '127.0.0.1',
-    sShutdownMargin: process.S_SHUTD0WN_MARGIN || 10
-  }
-}
 
 function setupRelayServer (app, dht, logger, sShutdownMargin) {
   // Note: need to define before creating the websocketPlugin
@@ -104,10 +92,7 @@ async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
   logger.info('Closed websocket server connections')
 }
 
-async function main () {
-  const { wsPort, dhtPort, logLevel, host, sShutdownMargin } = loadConfig()
-  const logger = pino({ level: logLevel })
-
+async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
   logger.info('Starting program')
 
   const dht = new DHT({ port: dhtPort })
@@ -149,4 +134,4 @@ async function main () {
   })
 }
 
-main()
+module.exports = setup
