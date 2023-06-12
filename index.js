@@ -82,20 +82,20 @@ async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
       for (const socket of wsServer.clients) {
         socket.send(`Server closing. Socket will shut down in ${sShutdownMargin}s`)
       }
-
-      await Promise.race([
-        new Promise(resolve => setTimeout(resolve, sShutdownMargin * 1000)),
-        closeProm // If all connections close before the timeout
-      ])
     }
+
+    await Promise.race([
+      new Promise(resolve => setTimeout(resolve, sShutdownMargin * 1000)),
+      closeProm // If all connections close before the timeout
+    ])
 
     const nrRemainingClients = wsServer.clients.size
     if (nrRemainingClients) {
       logger.info(`force-closing connection to ${nrRemainingClients} clients`)
 
       const goingAwayCode = 1001
-      for (const client of wsServer.clients) {
-        client.close(goingAwayCode, 'Server is going offline')
+      for (const socket of wsServer.clients) {
+        socket.close(goingAwayCode, 'Server is going offline')
       }
     }
   } catch (e) {
