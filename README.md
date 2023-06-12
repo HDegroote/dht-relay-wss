@@ -1,4 +1,4 @@
-# DHT-Relay Wss
+# DHT-Relay WSS
 
 Websocket server for the DHT Relay, with some minimal instrumentation (`/health` and `/metrics` endpoints)
 
