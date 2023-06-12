@@ -1,5 +1,5 @@
 {
-  "name": "dht-relay-server",
+  "name": "dht-relay-wss",
   "version": "0.0.0",
   "description": "hyperswarm-relay with some instrumentation",
   "main": "index.js",
@@ -13,9 +13,9 @@
   "author": "H. Degroote",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/HDegroote/dht-relay-server/issues"
+    "url": "https://github.com/HDegroote/dht-relay-wss/issues"
   },
-  "homepage": "https://github.com/HDegroote/dht-relay-server#readme",
+  "homepage": "https://github.com/HDegroote/dht-relay-wss#readme",
   "dependencies": {
     "@fastify/websocket": "^8.1.0",
     "@hyperswarm/dht": "^6.5.1",
