@@ -25,7 +25,7 @@ If you would like them to be human-readable, pipe them into pino-pretty (which n
 
 Listens for websocket connections at `/`
 
-In addition, has the following http endpoint:
+In addition, has the following http endpoints:
 
 #### ```GET /health```
 
