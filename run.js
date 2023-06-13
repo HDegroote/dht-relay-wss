@@ -7,11 +7,13 @@ const setup = require('./index')
 
 function loadConfig () {
   return {
-    wsPort: process.WS_PORT || 8080,
-    dhtPort: process.DHT_PORT,
-    logLevel: process.LOG_LEVEL || 'info',
-    host: process.HOST || '127.0.0.1',
-    sShutdownMargin: process.S_SHUTD0WN_MARGIN || 10
+    wsPort: process.env.WS_PORT || 8080,
+    dhtPort: process.env.DHT_PORT,
+    logLevel: process.env.LOG_LEVEL || 'info',
+    host: process.env.HOST || '127.0.0.1',
+    sShutdownMargin: process.env.S_SHUTDOWN_MARGIN == null
+      ? 10
+      : process.env.S_SHUTDOWN_MARGIN
   }
 }
 
