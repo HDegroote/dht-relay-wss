@@ -40,10 +40,10 @@ Returns metrics in Prometheus format
 Options are specified either in a .env file or as environment variables. They include:
 
 ```
-  wsPort=8080,
-  dhtPort,
-  logLevel='info',
-  host='127.0.0.1',
-  sShutdownMargin=10
+  WS_PORT=8080,
+  DHT_PORT,
+  LOG_LEVEL='info',
+  HOST='127.0.0.1',
+  S_SHUTDOWN_MARGIN=10
 ```
 
