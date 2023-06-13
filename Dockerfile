@@ -1,0 +1,11 @@
+FROM node:18-slim
+
+ENV WS_PORT=8080
+ENV DHT_PORT=48200
+ENV LOG_LEVEL=info
+ENV HOST=0.0.0.0
+ENV S_SHUTDOWN_MARGIN=10
+
+RUN npm i -g dht-relay-wss@0.0.1-alpha.1
+
+ENTRYPOINT dht-relay-wss
