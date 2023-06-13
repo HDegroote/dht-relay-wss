@@ -1,7 +1,7 @@
 {
   "name": "dht-relay-wss",
   "version": "0.0.0",
-  "description": "hyperswarm-relay websocket server with some instrumentation",
+  "description": "hyperswarm-dht-relay websocket server with some instrumentation",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -13,6 +13,14 @@
     "type": "git",
     "url": "git+https://github.com/HDegroote/dht-relay-server.git"
   },
+  "keywords": [
+    "Hyperswarm",
+    "dht",
+    "relay",
+    "websocket",
+    "server",
+    "wss"
+  ],
   "author": "H. Degroote",
   "license": "Apache-2.0",
   "bugs": {
