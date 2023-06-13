@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/HDegroote/dht-relay-server.git"
+    "url": "git+https://github.com/HDegroote/dht-relay-wss.git"
   },
   "keywords": [
     "Hyperswarm",
