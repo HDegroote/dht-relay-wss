@@ -18,7 +18,7 @@ jobs:
       -
         name: 'Extract tag name'
         shell: bash
-        run: echo "tag=${GITHUB_REF##*/}"" >> $GITHUB_OUTPUT
+        run: echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
         id: extract_tag
       -
         name: Login to Docker Hub
