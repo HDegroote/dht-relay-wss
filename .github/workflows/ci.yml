@@ -30,4 +30,4 @@ jobs:
         with:
           push: true
           tags: hdegroote/dht-relay-wss:${GITHUB_REF##*/}
-          build-args: ${GITHUB_REF##*/}
+          build-args: TAG=${GITHUB_REF##*/}
