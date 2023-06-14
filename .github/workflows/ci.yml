@@ -17,7 +17,7 @@ jobs:
     steps:
       -
         name: 'printing the tag'
-        run: echo ${GITHUB_REF##*/}
+        run: echo ${{ github.ref##*/ }}
       -
         name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -29,5 +29,5 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: hdegroote/dht-relay-wss:${GITHUB_REF##*/}
-          build-args: TAG=${GITHUB_REF##*/}
+          tags: hdegroote/dht-relay-wss:${{ github.ref##*/ }}
+          build-args: TAG=${{ github.ref##*/ }}
