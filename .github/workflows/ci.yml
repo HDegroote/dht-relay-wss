@@ -12,14 +12,11 @@ on:
       - '*'
 
 jobs:
-  docker:
+  docker: # Should run after the npm package was published
     runs-on: ubuntu-latest
     steps:
       -
-        name: 'print test'
-        run: echo ${{ env.GITHUB_REF }}
-      -
-        name: 'more print test'
+        name: 'printing the tag'
         run: echo ${GITHUB_REF##*/}
       -
         name: Login to Docker Hub
@@ -32,5 +29,5 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: hdegroote/dht-relay-wss:latest
-          build-args: ${{ env.GITHUB_REF }} # Should fail
+          tags: ${GITHUB_REF##*/}
+          build-args: ${GITHUB_REF##*/}
