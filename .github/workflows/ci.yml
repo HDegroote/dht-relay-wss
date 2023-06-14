@@ -31,5 +31,5 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: hdegroote/dht-relay-wss:${{ steps.extract_tag.outputs.tag }}
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/dht-relay-wss:${{ steps.extract_tag.outputs.tag }}, ${{ secrets.DOCKER_HUB_USERNAME }}/dht-relay-wss:latest
           build-args: TAG=${{ steps.extract_tag.outputs.tag }}
