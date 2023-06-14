@@ -18,6 +18,8 @@ jobs:
       -
         name: 'print test'
         run: echo ${{ env.GITHUB_REF }}
+      -
+        name: 'more print test'
         run: echo $GITHUB_REF
       -
         name: Login to Docker Hub
