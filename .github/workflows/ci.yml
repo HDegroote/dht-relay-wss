@@ -2,15 +2,22 @@
 
 name: CI
 
+# on:
+#   push:
+#     branches:
+#       - 'main'
 on:
   push:
-    branches:
-      - 'main'
+    tags:
+      - '*'
 
 jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+      -
+        name: 'print test'
+        run: echo ${{ env.GITHUB_REF }}
       -
         name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -23,4 +30,4 @@ jobs:
         with:
           push: true
           tags: hdegroote/dht-relay-wss:latest
-          build-args: TAG=0.0.1-alpha.2 # SHould fail
+          build-args: ${{ env.GITHUB_REF }} # Should fail
