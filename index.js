@@ -52,7 +52,7 @@ function setupRelayServer (app, dht, logger, sShutdownMargin) {
 }
 
 function setupHealthEndpoint (app) {
-  app.get('/health', function (req, reply) {
+  app.get('/health', { logLevel: 'warn' }, function (req, reply) {
     reply.status(200)
     reply.send('Healthy')
   })
@@ -99,7 +99,12 @@ async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
   const app = fastify({ logger })
 
   setupRelayServer(app, dht, logger, sShutdownMargin)
-  await app.register(metricsPlugin, { endpoint: '/metrics' })
+  await app.register(metricsPlugin, {
+    endpoint: '/metrics',
+    routeMetrics: {
+      routeBlacklist: ['/health', '/metrics']
+    }
+  })
   setupHealthEndpoint(app, logger)
 
   await app.listen({
