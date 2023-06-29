@@ -11,6 +11,7 @@ Note also that [hyperswarm-dht-relay](https://github.com/holepunchto/hyperswarm-
 `npm i -g dht-relay-wss`
 
 ## Usage
+Note: can be run as Docker, see [here](https://hub.docker.com/repository/docker/hdegroote/dht-relay-wss)
 
 The global install exposes a script you can run with
 
