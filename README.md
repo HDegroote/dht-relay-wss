@@ -1,6 +1,6 @@
 # DHT-Relay WSS
 
-Websocket server for the Hyperswarm DHT Relay, with some minimal instrumentation (`/health` and `/metrics` endpoints)
+Websocket server for the Hyperswarm DHT Relay, with some minimal instrumentation (`/health` and `/metrics` endpoints).
 
 Warning: still in alfa, breaking changes possible till v1 release.
 
@@ -21,6 +21,8 @@ By default, the logs are in JSON format.
 If you would like them to be human-readable, pipe them into pino-pretty (which needs to be installed):
 
 `dht-relay-wss | pino-pretty`
+
+When deploying, you will typically want to run this behind a reverse-proxy which terminates the wss (websocket secure) connection.
 
 ## Endpoints
 
