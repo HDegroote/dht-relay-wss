@@ -112,8 +112,6 @@ async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
     host
   })
 
-  logger.info(`Indicated DHT port: ${dht.port}`)
-
   goodbye(async () => {
     logger.info('Closing down DHT')
     try {
@@ -137,6 +135,9 @@ async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
 
     logger.info('Exiting program')
   })
+
+  await dht.ready()
+  logger.info(`DHT port: ${dht.port} (firewalled: ${dht.firewalled})`)
 }
 
 module.exports = setup
