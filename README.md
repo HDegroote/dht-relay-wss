@@ -11,11 +11,12 @@ Note also that [hyperswarm-dht-relay](https://github.com/holepunchto/hyperswarm-
 `npm i -g dht-relay-wss`
 
 ## Usage
+
 Note: can be run as Docker, see [here](https://hub.docker.com/repository/docker/hdegroote/dht-relay-wss)
 
 The global install exposes a script you can run with
 
-```dht-relay-wss```
+`dht-relay-wss`
 
 By default, the logs are in JSON format.
 If you would like them to be human-readable, pipe them into pino-pretty (which needs to be installed):
@@ -30,11 +31,11 @@ Listens for websocket connections at `/`
 
 In addition, has the following http endpoints:
 
-#### ```GET /health```
+#### `GET /health`
 
 Returns a 200 status if healthy, or 503 otherwise.
 
-#### ```GET /metrics```
+#### `GET /metrics`
 
 Returns metrics in Prometheus format
 
@@ -46,7 +47,7 @@ Options are specified either in a .env file or as environment variables. They in
   WS_PORT=8080,
   DHT_PORT,
   LOG_LEVEL='info',
+  DHT_HOST='127.0.0.1'
   HOST='127.0.0.1',
   S_SHUTDOWN_MARGIN=10
 ```
-

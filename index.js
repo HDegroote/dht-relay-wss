@@ -7,7 +7,7 @@ const safetyCatch = require('safety-catch')
 const metricsPlugin = require('fastify-metrics')
 const websocketPlugin = require('@fastify/websocket')
 
-function setupRelayServer (app, dht, logger, sShutdownMargin) {
+function setupRelayServer(app, dht, logger, sShutdownMargin) {
   // Note: need to define before creating the websocketPlugin
   // to ensure our hook runs first. (We would like to override it,
   // so it gives some margin to the existing sockets to close,
@@ -32,7 +32,7 @@ function setupRelayServer (app, dht, logger, sShutdownMargin) {
       const port = req.socket.remotePort
 
       const id = `${ip}:${port}`
-      socket.on('error', (error) => {
+      socket.on('error', error => {
         // Socket errors are often unexpected hang-ups etc, so we swallow them
         logger.info(`Socket error for connection at ${id} (${error.message})`)
       })
@@ -51,21 +51,23 @@ function setupRelayServer (app, dht, logger, sShutdownMargin) {
   logger.info('Setup ws route')
 }
 
-function setupHealthEndpoint (app) {
+function setupHealthEndpoint(app) {
   app.get('/health', { logLevel: 'warn' }, function (req, reply) {
     reply.status(200)
     reply.send('Healthy')
   })
 }
 
-async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
+async function closeWsServerConnections(wsServer, logger, sShutdownMargin) {
   logger.info('Closing websocket server connections')
   try {
     const closeProm = new Promise(resolve => wsServer.close(resolve))
     closeProm.catch(safetyCatch)
 
     if (wsServer.clients.size > 0 && sShutdownMargin) {
-      logger.info(`Waiting to send close signals to existing clients for ${sShutdownMargin}s (shutdown margin)`)
+      logger.info(
+        `Waiting to send close signals to existing clients for ${sShutdownMargin}s (shutdown margin)`
+      )
 
       for (const socket of wsServer.clients) {
         socket.send(`Server closing. Socket will shut down in ${sShutdownMargin}s`)
@@ -92,10 +94,10 @@ async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
   logger.info('Closed websocket server connections')
 }
 
-async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
+async function setup(logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin } = {}) {
   logger.info('Starting program')
 
-  const dht = new DHT({ port: dhtPort })
+  const dht = new DHT({ port: dhtPort, host: dhtHost })
   const app = fastify({ logger })
 
   setupRelayServer(app, dht, logger, sShutdownMargin)
@@ -137,7 +139,7 @@ async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
   })
 
   await dht.ready()
-  logger.info(`DHT port: ${dht.port} (firewalled: ${dht.firewalled})`)
+  logger.info(`DHT: ${dht.host}:${dht.port} (firewalled: ${dht.firewalled})`)
 }
 
 module.exports = setup
