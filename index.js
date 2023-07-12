@@ -8,15 +8,10 @@ const metricsPlugin = require('fastify-metrics')
 const websocketPlugin = require('@fastify/websocket')
 
 function setupRelayServer (app, dht, logger, sShutdownMargin) {
-  // Note: need to define before creating the websocketPlugin
-  // to ensure our hook runs first. (We would like to override it,
-  // so it gives some margin to the existing sockets to close,
-  // but we can't override it, so we settle for going first)
-  app.addHook('preClose', async function () {
-    await closeWsServerConnections(app.websocketServer, logger, sShutdownMargin)
-  })
-
   app.register(websocketPlugin, {
+    preClose: async function wssPreClose () {
+      await closeWsServerConnections(this.websocketServer, logger, sShutdownMargin)
+    },
     options: {
       clientTracking: true
     },
@@ -126,9 +121,6 @@ async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
     try {
       await app.close()
     } catch (e) {
-      // TODO: cleaner shutdown of websocket server
-      // (currently always throws because websocket server
-      // has already been shutdown)
       console.error('error while shutting down overall server:', e)
     }
     logger.info('Closed down the overall server')
