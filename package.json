@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/HDegroote/dht-relay-wss#readme",
   "dependencies": {
-    "@fastify/websocket": "^8.1.0",
+    "@fastify/websocket": "^8.2.0",
     "@hyperswarm/dht": "^6.5.1",
     "@hyperswarm/dht-relay": "^0.4.1",
     "dotenv": "^16.1.4",

@@ -11,8 +11,10 @@ function loadConfig () {
     dhtPort: parseInt(process.env.DHT_PORT || 0),
     logLevel: process.env.LOG_LEVEL || 'info',
     host: process.env.HOST || '127.0.0.1',
+    // Should be < 10s, lest it interfere with a fastify timeout
+    // (logs a caught error if it does, so not dramatic)
     sShutdownMargin: process.env.S_SHUTDOWN_MARGIN == null
-      ? 10
+      ? 5
       : parseInt(process.env.S_SHUTDOWN_MARGIN)
   }
 }
