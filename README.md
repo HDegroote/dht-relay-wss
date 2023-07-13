@@ -47,7 +47,7 @@ Options are specified either in a .env file or as environment variables. They in
   WS_PORT=8080,
   DHT_PORT,
   LOG_LEVEL='info',
-  DHT_HOST='127.0.0.1'
   HOST='127.0.0.1',
+  DHT_HOST='0.0.0.0'
   S_SHUTDOWN_MARGIN=10
 ```

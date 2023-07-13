@@ -5,20 +5,25 @@ const pino = require('pino')
 
 const setup = require('./index')
 
-function loadConfig() {
+function loadConfig () {
   return {
     logLevel: process.env.LOG_LEVEL || 'info',
     wsPort: parseInt(process.env.WS_PORT || 8080),
     dhtPort: parseInt(process.env.DHT_PORT || 0),
-    dhtHost: process.env.DHT_HOST || '127.0.0.1',
+    dhtHost: process.env.DHT_HOST || '0.0.0.0',
     host: process.env.HOST || '127.0.0.1',
+    // Should be < 10s, lest it interfere with a fastify timeout
+    // (logs a caught error if it does, so not dramatic)
     sShutdownMargin:
-      process.env.S_SHUTDOWN_MARGIN == null ? 10 : parseInt(process.env.S_SHUTDOWN_MARGIN)
+      process.env.S_SHUTDOWN_MARGIN == null
+        ? 5
+        : parseInt(process.env.S_SHUTDOWN_MARGIN)
   }
 }
 
-async function main() {
-  const { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin } = loadConfig()
+async function main () {
+  const { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin } =
+    loadConfig()
   const logger = pino({ level: logLevel })
 
   await setup(logger, {

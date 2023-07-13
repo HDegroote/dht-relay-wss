@@ -1,10 +1,10 @@
 {
   "name": "dht-relay-wss",
-  "version": "0.0.1-alpha.7",
+  "version": "0.0.1-alpha.8",
   "description": "hyperswarm-dht-relay websocket server with some instrumentation",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "standard"
   },
   "bin": {
     "dht-relay-wss": "./run.js"
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/HDegroote/dht-relay-wss#readme",
   "dependencies": {
-    "@fastify/websocket": "^8.1.0",
+    "@fastify/websocket": "^8.2.0",
     "@hyperswarm/dht": "^6.5.1",
     "@hyperswarm/dht-relay": "^0.4.1",
     "dotenv": "^16.1.4",

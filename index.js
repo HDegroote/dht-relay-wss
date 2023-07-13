@@ -7,7 +7,7 @@ const safetyCatch = require('safety-catch')
 const metricsPlugin = require('fastify-metrics')
 const websocketPlugin = require('@fastify/websocket')
 
-function setupRelayServer(app, dht, logger, sShutdownMargin) {
+function setupRelayServer (app, dht, logger, sShutdownMargin) {
   // Note: need to define before creating the websocketPlugin
   // to ensure our hook runs first. (We would like to override it,
   // so it gives some margin to the existing sockets to close,
@@ -17,6 +17,9 @@ function setupRelayServer(app, dht, logger, sShutdownMargin) {
   })
 
   app.register(websocketPlugin, {
+    preClose: async function wssPreClose () {
+      await closeWsServerConnections(this.websocketServer, logger, sShutdownMargin)
+    },
     options: {
       clientTracking: true
     },
@@ -51,14 +54,14 @@ function setupRelayServer(app, dht, logger, sShutdownMargin) {
   logger.info('Setup ws route')
 }
 
-function setupHealthEndpoint(app) {
+function setupHealthEndpoint (app) {
   app.get('/health', { logLevel: 'warn' }, function (req, reply) {
     reply.status(200)
     reply.send('Healthy')
   })
 }
 
-async function closeWsServerConnections(wsServer, logger, sShutdownMargin) {
+async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
   logger.info('Closing websocket server connections')
   try {
     const closeProm = new Promise(resolve => wsServer.close(resolve))
@@ -94,7 +97,7 @@ async function closeWsServerConnections(wsServer, logger, sShutdownMargin) {
   logger.info('Closed websocket server connections')
 }
 
-async function setup(logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin } = {}) {
+async function setup (logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin } = {}) {
   logger.info('Starting program')
 
   const dht = new DHT({ port: dhtPort, host: dhtHost })
@@ -128,9 +131,6 @@ async function setup(logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin }
     try {
       await app.close()
     } catch (e) {
-      // TODO: cleaner shutdown of websocket server
-      // (currently always throws because websocket server
-      // has already been shutdown)
       console.error('error while shutting down overall server:', e)
     }
     logger.info('Closed down the overall server')
