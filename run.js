@@ -11,6 +11,7 @@ function loadConfig () {
     dhtPort: parseInt(process.env.DHT_PORT || 0),
     logLevel: process.env.LOG_LEVEL || 'info',
     host: process.env.HOST || '127.0.0.1',
+    dhtHost: process.env.DHT_HOST || '0.0.0.0',
     // Should be < 10s, lest it interfere with a fastify timeout
     // (logs a caught error if it does, so not dramatic)
     sShutdownMargin: process.env.S_SHUTDOWN_MARGIN == null
@@ -20,10 +21,10 @@ function loadConfig () {
 }
 
 async function main () {
-  const { wsPort, dhtPort, logLevel, host, sShutdownMargin } = loadConfig()
+  const { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin } = loadConfig()
   const logger = pino({ level: logLevel })
 
-  await setup(logger, { wsPort, dhtPort, logLevel, host, sShutdownMargin })
+  await setup(logger, { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin })
 }
 
 main()
