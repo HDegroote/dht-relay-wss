@@ -35,7 +35,6 @@
     "fastify-metrics": "^10.3.0",
     "graceful-goodbye": "^1.2.1",
     "hyperdht": "^6.6.1",
-    "hyperswarm": "^4.5.1",
     "pino": "^8.14.1",
     "prom-client": "^14.2.0",
     "safety-catch": "^1.0.2"
@@ -43,6 +42,7 @@
   "devDependencies": {
     "brittle": "^3.3.2",
     "hypercore-crypto": "^3.3.1",
+    "hyperswarm": "^4.5.1",
     "standard": "^17.1.0"
   }
 }
