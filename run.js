@@ -2,6 +2,7 @@
 
 require('dotenv').config()
 const pino = require('pino')
+const goodbye = require('graceful-goodbye')
 
 const setup = require('./index')
 
@@ -24,7 +25,19 @@ async function main () {
   const { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin } = loadConfig()
   const logger = pino({ level: logLevel })
 
-  await setup(logger, { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin })
+  const app = await setup(logger, { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin })
+
+  goodbye(async () => {
+    logger.info('Closing down the overall server')
+    try {
+      await app.close()
+    } catch (e) {
+      console.error('error while shutting down overall server:', e)
+    }
+    logger.info('Closed down the overall server')
+
+    logger.info('Exiting program')
+  })
 }
 
 main()
