@@ -87,10 +87,10 @@ async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
   logger.info('Closed websocket server connections')
 }
 
-async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
+async function setup (logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin } = {}) {
   logger.info('Starting program')
 
-  const dht = new DHT({ port: dhtPort })
+  const dht = new DHT({ port: dhtPort, host: dhtHost })
   const app = fastify({ logger })
 
   setupRelayServer(app, dht, logger, sShutdownMargin)
@@ -129,7 +129,7 @@ async function setup (logger, { wsPort, dhtPort, host, sShutdownMargin } = {}) {
   })
 
   await dht.ready()
-  logger.info(`DHT port: ${dht.port} (firewalled: ${dht.firewalled})`)
+  logger.info(`DHT: ${dht.host}:${dht.port} (firewalled: ${dht.firewalled})`)
 }
 
 module.exports = setup
