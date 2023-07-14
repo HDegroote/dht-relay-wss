@@ -1,7 +1,6 @@
-const DHT = require('@hyperswarm/dht')
+const DHT = require('hyperdht')
 const { relay } = require('@hyperswarm/dht-relay')
 const Stream = require('@hyperswarm/dht-relay/ws')
-const goodbye = require('graceful-goodbye')
 const fastify = require('fastify')
 const safetyCatch = require('safety-catch')
 const metricsPlugin = require('fastify-metrics')
@@ -87,11 +86,17 @@ async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
   logger.info('Closed websocket server connections')
 }
 
-async function setup (logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin } = {}) {
+async function setup (logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin, bootstrap } = {}) {
   logger.info('Starting program')
 
-  const dht = new DHT({ port: dhtPort, host: dhtHost })
+  const dht = new DHT({ port: dhtPort, host: dhtHost, bootstrap })
   const app = fastify({ logger })
+
+  app.addHook('onClose', async () => {
+    logger.info('Closing down DHT')
+    await dht.destroy()
+    logger.info('Closed down DHT')
+  })
 
   setupRelayServer(app, dht, logger, sShutdownMargin)
   await app.register(metricsPlugin, {
@@ -107,29 +112,10 @@ async function setup (logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin 
     host
   })
 
-  goodbye(async () => {
-    logger.info('Closing down DHT')
-    try {
-      await dht.destroy()
-    } catch (e) {
-      logger.error(e)
-    }
-
-    logger.info('Closed down DHT')
-
-    logger.info('Closing down the overall server')
-    try {
-      await app.close()
-    } catch (e) {
-      console.error('error while shutting down overall server:', e)
-    }
-    logger.info('Closed down the overall server')
-
-    logger.info('Exiting program')
-  })
-
   await dht.ready()
   logger.info(`DHT: ${dht.host}:${dht.port} (firewalled: ${dht.firewalled})`)
+
+  return app
 }
 
 module.exports = setup
