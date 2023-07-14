@@ -20,7 +20,6 @@ test('Can access the swarm through a relay', async function (t) {
   const url = `ws://${host}:${app.server.address().port}`
   const relayedSwarm = await getRelayedSwarm(url, t)
 
-  // TODO: figure out how to do this over testnet
   const swarm = new Hyperswarm({ bootstrap })
   t.teardown(async () => {
     await swarm.destroy()
