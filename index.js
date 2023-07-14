@@ -1,4 +1,4 @@
-const DHT = require('@hyperswarm/dht')
+const DHT = require('@hyperdht')
 const { relay } = require('@hyperswarm/dht-relay')
 const Stream = require('@hyperswarm/dht-relay/ws')
 const fastify = require('fastify')
