@@ -4,7 +4,7 @@
   "description": "hyperswarm-dht-relay websocket server with some instrumentation",
   "main": "index.js",
   "scripts": {
-    "test": "standard"
+    "test": "standard && brittle test.js"
   },
   "bin": {
     "dht-relay-wss": "./run.js"
@@ -29,7 +29,7 @@
   "homepage": "https://github.com/HDegroote/dht-relay-wss#readme",
   "dependencies": {
     "@fastify/websocket": "^8.2.0",
-    "@hyperswarm/dht": "^6.5.1",
+    "hyperdht": "^6.6.1",
     "@hyperswarm/dht-relay": "^0.4.1",
     "dotenv": "^16.1.4",
     "fastify": "^4.18.0",
@@ -40,6 +40,8 @@
     "safety-catch": "^1.0.2"
   },
   "devDependencies": {
+    "brittle": "^3.3.2",
+    "hypercore-crypto": "^3.3.1",
     "standard": "^17.1.0"
   }
 }
