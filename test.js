@@ -6,20 +6,26 @@ const test = require('brittle')
 const setup = require('./index')
 const pino = require('pino')
 const hypCrypto = require('hypercore-crypto')
+const createTestnet = require('@hyperswarm/testnet')
 
 test('Can access the swarm through a relay', async function (t) {
   t.plan(1)
+
+  const testnet = await createTestnet(3)
+  const bootstrap = testnet.bootstrap
+
   const host = '127.0.0.1'
-  const app = await setup(pino({ level: 'warn' }), { host })
+  const app = await setup(pino({ level: 'warn' }), { host, bootstrap })
 
   const url = `ws://${host}:${app.server.address().port}`
   const relayedSwarm = await getRelayedSwarm(url, t)
 
   // TODO: figure out how to do this over testnet
-  const swarm = new Hyperswarm()
+  const swarm = new Hyperswarm({ bootstrap })
   t.teardown(async () => {
     await swarm.destroy()
     await app.close()
+    testnet.destroy()
   })
 
   swarm.on('connection', c => {

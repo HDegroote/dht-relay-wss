@@ -86,10 +86,10 @@ async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
   logger.info('Closed websocket server connections')
 }
 
-async function setup (logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin } = {}) {
+async function setup (logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin, bootstrap } = {}) {
   logger.info('Starting program')
 
-  const dht = new DHT({ port: dhtPort, host: dhtHost })
+  const dht = new DHT({ port: dhtPort, host: dhtHost, bootstrap })
   const app = fastify({ logger })
 
   app.addHook('onClose', async () => {
