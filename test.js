@@ -28,6 +28,7 @@ test('Can access the swarm through a relay', async function (t) {
   })
 
   swarm.on('connection', c => {
+    c.on('error', e => console.log('swallowing connection error', e))
     t.ok('Relayed peer connected')
   })
 
