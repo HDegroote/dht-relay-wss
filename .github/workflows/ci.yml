@@ -45,4 +45,3 @@ jobs:
         with:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/dht-relay-wss:${{ steps.extract_tag.outputs.tag }}, ${{ secrets.DOCKERHUB_USERNAME }}/dht-relay-wss:latest
-          build-args: TAG=${{ steps.extract_tag.outputs.tag }}

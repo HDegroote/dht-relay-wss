@@ -1,5 +1,18 @@
-FROM node:18-slim
-ARG TAG=passAsBuildArg
+FROM node:20-slim
+
+RUN apt update && apt install curl -y
+
+RUN useradd --create-home relayer
+USER relayer
+
+COPY package-lock.json /home/relayer/
+COPY node_modules /home/relayer/node_modules
+COPY package.json /home/relayer/
+COPY run.js /home/relayer/
+COPY index.js /home/relayer/
+COPY LICENSE /home/relayer/
+COPY NOTICE /home/relayer/
+
 
 ENV WS_PORT=8080
 ENV DHT_PORT=48200
@@ -8,9 +21,6 @@ ENV HOST=0.0.0.0
 ENV DHT_HOST=0.0.0.0
 ENV S_SHUTDOWN_MARGIN=5
 
-RUN npm i -g dht-relay-wss@${TAG}
+HEALTHCHECK --retries=1 --timeout=5s CMD curl --fail http://localhost:8080/health
 
-RUN useradd --create-home relayer
-USER relayer
-
-ENTRYPOINT ["dht-relay-wss"]
+ENTRYPOINT ["node", "/home/relayer/run.js"]
