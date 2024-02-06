@@ -1,5 +1,3 @@
-# TODO: auto tags with https://docs.docker.com/build/ci/github-actions/manage-tags-labels/
-
 name: CI
 
 on:
@@ -29,19 +27,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        name: 'Extract tag name'
-        shell: bash
-        run: echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
-        id: extract_tag
+        name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1 https://github.com/actions/checkout/releases/tag/v4.1.1
+      -
+        name: install node
+        uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3.8.2 https://github.com/actions/setup-node/releases/tag/v3.8.2
+        with:
+          node-version: 20
+          registry-url: 'https://npm.pkg.github.com'
+      - run: npm install --omit=dev
       -
         name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0 https://github.com/docker/login-action/releases/tag/v3.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
-        name: Build and push Docker image
-        uses: docker/build-push-action@v4
+        name: Prepare image metadata
+        id: meta
+        uses: docker/metadata-action@dbef88086f6cef02e264edb7dbf63250c17cef6c # v5.5.0 https://github.com/docker/metadata-action/releases/tag/v5.5.0
         with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/dht-relay-wss
+      -
+        name: Build and push Docker image
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0 https://github.com/docker/build-push-action/releases/tag/v5.1.0
+        with:
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/dht-relay-wss:${{ steps.extract_tag.outputs.tag }}, ${{ secrets.DOCKERHUB_USERNAME }}/dht-relay-wss:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
