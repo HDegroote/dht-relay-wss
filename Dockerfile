@@ -21,6 +21,6 @@ ENV HOST=0.0.0.0
 ENV DHT_HOST=0.0.0.0
 ENV S_SHUTDOWN_MARGIN=5
 
-HEALTHCHECK --retries=1 --timeout=5s CMD curl --fail http://localhost:8080/health
+HEALTHCHECK --retries=1 --timeout=5s CMD curl --fail http://localhost:${WS_PORT}/health
 
 ENTRYPOINT ["node", "/home/relayer/run.js"]
