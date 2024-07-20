@@ -54,7 +54,7 @@ async function main () {
       alias
     )
 
-    promClient.on('register-alias-success', ( { updated } ) => {
+    promClient.on('register-alias-success', ({ updated }) => {
       logger.info(`Registered alias ${alias} successfully (update: ${updated})`)
     })
 
