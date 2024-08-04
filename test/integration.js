@@ -7,6 +7,7 @@ const createTestnet = require('hyperdht/testnet')
 const { getRelayedSwarm } = require('./helpers')
 const Hyperswarm = require('hyperswarm')
 const hypCrypto = require('hypercore-crypto')
+const axios = require('axios')
 
 const EXEC_LOC = path.join(path.dirname(__dirname), 'run.js')
 
@@ -58,6 +59,7 @@ test('Integration test, happy path', async t => {
     t.fail('There should be no stderr')
   })
 
+  let httpAddress = null
   let relayAddress = null
 
   const stdoutDec = new NewlineDecoder('utf-8')
@@ -66,7 +68,7 @@ test('Integration test, happy path', async t => {
 
     for (const line of stdoutDec.push(d)) {
       if (line.includes('Server listening at')) {
-        const httpAddress = line.match(/http:\/\/127.0.0.1:[0-9]{3,5}/)[0]
+        httpAddress = line.match(/http:\/\/127.0.0.1:[0-9]{3,5}/)[0]
         relayAddress = httpAddress.replace('http', 'ws')
         tSetup.pass('wss server running')
       }
@@ -86,6 +88,11 @@ test('Integration test, happy path', async t => {
   })
 
   await tSetup
+
+  {
+    const res = await axios.get(`${httpAddress}/health`)
+    t.is(res.status, 200, 'health endpoint works')
+  }
 
   const relayedSwarm = await getRelayedSwarm(relayAddress, t)
   relayedSwarm.on('connection', c => {
@@ -115,6 +122,12 @@ test('Integration test, happy path', async t => {
   await relayedSwarm.destroy()
   await tDisconnectFromRelay
   await swarm.destroy()
+
+  {
+    const res = await axios.get(`${httpAddress}/metrics`)
+    console.log(res.data)
+    t.is(res.data.includes('http_request_summary_seconds'), true, 'metrics endpoint includes fastify metrics')
+  }
 
   prcRun.on('close', () => {
     tShutdown.pass('Process exited cleanly')

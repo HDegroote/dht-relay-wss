@@ -1,7 +1,7 @@
 const { relay } = require('@hyperswarm/dht-relay')
 const Stream = require('@hyperswarm/dht-relay/ws')
 const safetyCatch = require('safety-catch')
-// const metricsPlugin = require('fastify-metrics')
+
 const websocketPlugin = require('@fastify/websocket')
 const ReadyResource = require('ready-resource')
 
@@ -67,13 +67,6 @@ class DhtRelayWss extends ReadyResource {
   }
 }
 
-/* function setupHealthEndpoint (app) {
-  app.get('/health', { logLevel: 'warn' }, function (req, reply) {
-    reply.status(200)
-    reply.send('Healthy')
-  })
-} */
-
 async function closeWsServerConnections (wsServer, dhtRelay) {
   const sShutdownMargin = dhtRelay.sShutdownMargin
 
@@ -104,14 +97,5 @@ async function closeWsServerConnections (wsServer, dhtRelay) {
 
   dhtRelay.emit('ws-closing-done')
 }
-
-/* await app.register(metricsPlugin, {
-  endpoint: '/metrics',
-  routeMetrics: {
-    routeBlacklist: ['/health', '/metrics']
-  }
-})
-setupHealthEndpoint(app, logger)
-*/
 
 module.exports = DhtRelayWss

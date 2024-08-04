@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@hyperswarm/testnet": "^3.1.4",
+    "axios": "^1.7.3",
     "brittle": "^3.3.2",
     "hypercore-crypto": "^3.3.1",
     "hyperswarm": "^4.5.1",

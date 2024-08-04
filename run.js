@@ -5,8 +5,10 @@ const pino = require('pino')
 const goodbye = require('graceful-goodbye')
 const DHT = require('hyperdht')
 const fastify = require('fastify')
+const promClient = require('prom-client')
 
 const DhtRelayWss = require('./index')
+const instrument = require('./lib/instrument')
 
 function loadConfig () {
   const res = {
@@ -14,7 +16,6 @@ function loadConfig () {
     dhtPort: parseInt(process.env.DHT_RELAY_DHT_PORT || 0),
     logLevel: process.env.DHT_RELAY_LOG_LEVEL || 'info',
     host: process.env.DHT_RELAY_HTTP_HOST || '127.0.0.1',
-    // dhtHost: process.env.DHT_HOST || '0.0.0.0',
     // Should be < 10s, lest it interfere with a fastify timeout
     // (logs a caught error if it does, so not dramatic)
     sShutdownMargin: process.env.DHT_RELAY_S_SHUTDOWN_MARGIN == null
@@ -35,6 +36,7 @@ function loadConfig () {
 async function main () {
   const { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin, bootstrap } = loadConfig()
   const logger = pino({ level: logLevel })
+  promClient.collectDefaultMetrics()
 
   logger.info('Starting DHT relay')
 
@@ -43,6 +45,7 @@ async function main () {
 
   const dhtRelay = new DhtRelayWss(app, dht, { sShutdownMargin })
   setupLogging(dhtRelay, logger)
+  instrument(dhtRelay)
 
   goodbye(async () => {
     try {
