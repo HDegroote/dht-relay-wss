@@ -6,18 +6,29 @@ const websocketPlugin = require('@fastify/websocket')
 const ReadyResource = require('ready-resource')
 
 class DhtRelayWss extends ReadyResource {
-  constructor (app, dht, { sShutdownMargin = 5 } = {}) {
+  constructor (app, dht, { sShutdownMargin = 5, wsPort = 0, wsHost = 'localhost' } = {}) {
     super()
 
     this.app = app
     this.dht = dht
+
+    this.wsPort = wsPort
+    this.wsHost = wsHost
     this.sShutdownMargin = sShutdownMargin
+
+    this.httpAddress = null
+    this.wsAddress = null
 
     this._setupWsServer()
   }
 
   async _open () {
     await this.dht.ready()
+    this.httpAddress = await this.app.listen({
+      port: this.wsPort,
+      host: this.wsHost
+    })
+    this.wsAddress = this.httpAddress.replace('http', 'ws')
   }
 
   async _close () {
