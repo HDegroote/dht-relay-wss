@@ -2,25 +2,23 @@ FROM node:20-slim
 
 RUN apt update && apt install curl -y
 
-RUN useradd --create-home relayer
-USER relayer
+# Can be changed
+ENV DHT_RELAY_WS_PORT=8080
 
-COPY package-lock.json /home/relayer/
-COPY node_modules /home/relayer/node_modules
-COPY package.json /home/relayer/
-COPY run.js /home/relayer/
-COPY index.js /home/relayer/
-COPY LICENSE /home/relayer/
-COPY NOTICE /home/relayer/
+RUN useradd --create-home -u 42319 dht-relay-wss
 
+COPY package-lock.json /home/dht-relay-wss/
+COPY node_modules /home/dht-relay-wss/node_modules
+COPY package.json /home/dht-relay-wss/
+COPY run.js /home/dht-relay-wss/
+COPY index.js /home/dht-relay-wss/
+COPY lib/ home/dht-relay-wss/lib
+COPY LICENSE /home/dht-relay-wss/
+COPY NOTICE /home/dht-relay-wss/
 
-ENV WS_PORT=8080
-ENV DHT_PORT=48200
-ENV LOG_LEVEL=info
-ENV HOST=0.0.0.0
-ENV DHT_HOST=0.0.0.0
-ENV S_SHUTDOWN_MARGIN=5
+USER dht-relay-wss
+WORKDIR /home/dht-relay-wss/
 
 HEALTHCHECK --retries=1 --timeout=5s CMD curl --fail http://localhost:${WS_PORT}/health
 
-ENTRYPOINT ["node", "/home/relayer/run.js"]
+ENTRYPOINT ["node", "/home/dht-relay-wss/run.js"]
