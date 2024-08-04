@@ -4,7 +4,7 @@
   "description": "hyperswarm-dht-relay websocket server with some instrumentation",
   "main": "index.js",
   "scripts": {
-    "test": "standard && brittle test/test.js"
+    "test": "standard && brittle test/test.js && brittle test/integration.js"
   },
   "bin": {
     "dht-relay-wss": "./run.js"
@@ -44,6 +44,7 @@
     "brittle": "^3.3.2",
     "hypercore-crypto": "^3.3.1",
     "hyperswarm": "^4.5.1",
+    "newline-decoder": "^1.0.2",
     "standard": "^17.1.0"
   }
 }

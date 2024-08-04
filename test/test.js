@@ -1,12 +1,10 @@
-const DHT = require('@hyperswarm/dht-relay')
-const Stream = require('@hyperswarm/dht-relay/ws')
-const WebSocket = require('ws')
 const Hyperswarm = require('hyperswarm')
 const test = require('brittle')
 const pino = require('pino')
 const hypCrypto = require('hypercore-crypto')
 const createTestnet = require('@hyperswarm/testnet')
 
+const { getRelayedSwarm } = require('./helpers')
 const setup = require('../index')
 
 test('Can access the swarm through a relay', async function (t) {
@@ -39,18 +37,3 @@ test('Can access the swarm through a relay', async function (t) {
 
   relayedSwarm.join(key)
 })
-
-async function getRelayedSwarm (url, t) {
-  const socket = new WebSocket(url)
-
-  const stream = new Stream(true, socket)
-  const dht = new DHT(stream)
-
-  const swarm = new Hyperswarm({ dht })
-
-  t.teardown(async () => {
-    await swarm.destroy()
-  })
-
-  return swarm
-}
