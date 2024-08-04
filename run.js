@@ -6,9 +6,12 @@ const goodbye = require('graceful-goodbye')
 const DHT = require('hyperdht')
 const fastify = require('fastify')
 const promClient = require('prom-client')
+const idEnc = require('hypercore-id-encoding')
 
 const DhtRelayWss = require('./index')
 const instrument = require('./lib/instrument')
+const setupDhtPromClient = require('./lib/dht-prom-client')
+const safetyCatch = require('safety-catch')
 
 function loadConfig () {
   const res = {
@@ -30,11 +33,26 @@ function loadConfig () {
     }]
   }
 
+  if (process.env.DHT_RELAY_PROMETHEUS_ALIAS) {
+    res.prometheusAlias = process.env.DHT_RELAY_PROMETHEUS_ALIAS
+    try {
+      res.prometheusSharedSecret = idEnc.decode(process.env.DHT_RELAY_PROMETHEUS_SHARED_SECRET)
+      res.prometheusScraperPublicKey = idEnc.decode(process.env.DHT_RELAY_PROMETHEUS_SCRAPER_PUBLIC_KEY)
+      res.prometheusServiceName = 'dht-relay-wss'
+    } catch (error) {
+      console.error(error)
+      console.error('If DHT_RELAY_PROMETHEUS_ALIAS is set, then DHT_RELAY_PROMETHEUS_SHARED_SECRET and DHT_RELAY_PROMETHEUS_SCRAPER_PUBLIC_KEY must be set to valid keys')
+      process.exit(1)
+    }
+  }
+
   return res
 }
 
 async function main () {
-  const { wsPort, wsHost, dhtPort, logLevel, sShutdownMargin, bootstrap } = loadConfig()
+  const config = loadConfig()
+  const { wsPort, wsHost, dhtPort, logLevel, sShutdownMargin, bootstrap } = config
+
   const logger = pino({ level: logLevel })
   promClient.collectDefaultMetrics()
 
@@ -51,10 +69,23 @@ async function main () {
   setupLogging(dhtRelay, logger)
   instrument(dhtRelay)
 
+  let dhtPromClient = null
+  if (config.prometheusAlias) {
+    const { prometheusAlias, prometheusSharedSecret, prometheusScraperPublicKey, prometheusServiceName } = config
+    logger.info(`Setting up dht prom client with alias ${prometheusAlias}`)
+
+    // TODO: look into re-using the existing DHT
+    const dht = new DHT({ bootstrap })
+
+    dhtPromClient = setupDhtPromClient(dht, promClient, logger, {
+      prometheusAlias, prometheusSharedSecret, prometheusScraperPublicKey, prometheusServiceName
+    })
+  }
+
   goodbye(async () => {
     try {
-      logger.info('Closing down the wss server')
-      await app.close()
+      if (dhtPromClient) dhtPromClient.close().catch(safetyCatch)
+
       logger.info('Closing the relay')
       await dhtRelay.close()
       logger.info('Exiting program')
@@ -64,6 +95,8 @@ async function main () {
   })
 
   await dhtRelay.ready()
+  if (dhtPromClient) await dhtPromClient.ready()
+
   logger.info(`DHT: ${dht.host}:${dht.port} (firewalled: ${dht.firewalled})`)
 }
 
