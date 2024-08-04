@@ -3,10 +3,11 @@ const Stream = require('@hyperswarm/dht-relay/ws')
 const WebSocket = require('ws')
 const Hyperswarm = require('hyperswarm')
 const test = require('brittle')
-const setup = require('./index')
 const pino = require('pino')
 const hypCrypto = require('hypercore-crypto')
 const createTestnet = require('@hyperswarm/testnet')
+
+const setup = require('../index')
 
 test('Can access the swarm through a relay', async function (t) {
   t.plan(1)
