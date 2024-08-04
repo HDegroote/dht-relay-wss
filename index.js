@@ -1,121 +1,112 @@
-const DHT = require('hyperdht')
 const { relay } = require('@hyperswarm/dht-relay')
 const Stream = require('@hyperswarm/dht-relay/ws')
-const fastify = require('fastify')
 const safetyCatch = require('safety-catch')
-const metricsPlugin = require('fastify-metrics')
+
 const websocketPlugin = require('@fastify/websocket')
+const ReadyResource = require('ready-resource')
 
-function setupRelayServer (app, dht, logger, sShutdownMargin) {
-  app.register(websocketPlugin, {
-    preClose: async function wssPreClose () {
-      await closeWsServerConnections(this.websocketServer, logger, sShutdownMargin)
-    },
-    options: {
-      clientTracking: true
-    },
-    connectionOptions: {
-      readableObjectMode: true // See https://github.com/fastify/fastify-websocket/issues/185
-    }
-  })
+class DhtRelayWss extends ReadyResource {
+  constructor (app, dht, { sShutdownMargin = 5 } = {}) {
+    super()
 
-  app.register(async function (app) {
-    app.get('/', { websocket: true }, (connection, req) => {
-      const socket = connection.socket
-      const ip = req.socket.remoteAddress
-      const port = req.socket.remotePort
+    this.app = app
+    this.dht = dht
+    this.sShutdownMargin = sShutdownMargin
 
-      const id = `${ip}:${port}`
-      socket.on('error', (error) => {
-        // Socket errors are often unexpected hang-ups etc, so we swallow them
-        logger.info(`Socket error for connection at ${id} (${error.message})`)
-      })
-
-      socket.on('close', () => {
-        logger.info(`Stopped relaying to ${id}`)
-      })
-
-      logger.info(`Relaying to ${id}`)
-      relay(dht, new Stream(false, socket))
-
-      socket.send('You are being relayed')
-    })
-  })
-
-  logger.info('Setup ws route')
-}
-
-function setupHealthEndpoint (app) {
-  app.get('/health', { logLevel: 'warn' }, function (req, reply) {
-    reply.status(200)
-    reply.send('Healthy')
-  })
-}
-
-async function closeWsServerConnections (wsServer, logger, sShutdownMargin) {
-  logger.info('Closing websocket server connections')
-  try {
-    const closeProm = new Promise(resolve => wsServer.close(resolve))
-    closeProm.catch(safetyCatch)
-
-    if (wsServer.clients.size > 0 && sShutdownMargin) {
-      logger.info(`Waiting to send close signals to existing clients for ${sShutdownMargin}s (shutdown margin)`)
-
-      for (const socket of wsServer.clients) {
-        socket.send(`Server closing. Socket will shut down in ${sShutdownMargin}s`)
-      }
-    }
-
-    await Promise.race([
-      new Promise(resolve => setTimeout(resolve, sShutdownMargin * 1000)),
-      closeProm // If all connections close before the timeout
-    ])
-
-    const nrRemainingClients = wsServer.clients.size
-    if (nrRemainingClients) {
-      logger.info(`force-closing connection to ${nrRemainingClients} clients`)
-
-      const goingAwayCode = 1001
-      for (const socket of wsServer.clients) {
-        socket.close(goingAwayCode, 'Server is going offline')
-      }
-    }
-  } catch (e) {
-    logger.error(e)
+    this._setupWsServer()
   }
-  logger.info('Closed websocket server connections')
+
+  async _open () {
+    await this.dht.ready()
+  }
+
+  async _close () {
+    await this.app.close()
+    await this.dht.destroy()
+  }
+
+  _setupWsServer () {
+    // hack to pass our scope on to closeWssServerConnections
+    // (fastify forces a new scope when registering a plugin)
+    const self = this
+
+    this.app.register(websocketPlugin, {
+      preClose: async function wssPreClose () {
+        await closeWsServerConnections(this.websocketServer, self)
+      },
+      options: {
+        clientTracking: true
+      },
+      connectionOptions: {
+        readableObjectMode: true // See https://github.com/fastify/fastify-websocket/issues/185
+      }
+    })
+
+    this.app.register(async (app) => {
+      app.get('/', { websocket: true }, this._connHandler.bind(this))
+    })
+  }
+
+  async _connHandler (connection, req) {
+    const socket = connection.socket
+    const ip = req.socket.remoteAddress
+    const port = req.socket.remotePort
+    const id = `${ip}:${port}`
+
+    socket.on('error', (error) => {
+      this.emit('conn-error', { id, error })
+    })
+
+    socket.on('close', () => {
+      this.emit('conn-close', { id })
+    })
+
+    relay(this.dht, new Stream(false, socket))
+    this.emit('conn-open', { id })
+
+    socket.send('You are being relayed')
+  }
 }
 
-async function setup (logger, { wsPort, dhtPort, dhtHost, host, sShutdownMargin, bootstrap } = {}) {
-  logger.info('Starting program')
+async function closeWsServerConnections (wsServer, dhtRelay) {
+  const sShutdownMargin = dhtRelay.sShutdownMargin
 
-  const dht = new DHT({ port: dhtPort, host: dhtHost, bootstrap })
-  const app = fastify({ logger })
+  const closeProm = new Promise(resolve => wsServer.close(resolve))
+  closeProm.catch(safetyCatch)
 
-  app.addHook('onClose', async () => {
-    logger.info('Closing down DHT')
-    await dht.destroy()
-    logger.info('Closed down DHT')
-  })
-
-  setupRelayServer(app, dht, logger, sShutdownMargin)
-  await app.register(metricsPlugin, {
-    endpoint: '/metrics',
-    routeMetrics: {
-      routeBlacklist: ['/health', '/metrics']
+  dhtRelay.emit('ws-closing-signal', { nrClients: wsServer.clients.size, sShutdownMargin })
+  if (wsServer.clients.size > 0 && sShutdownMargin > 0) {
+    for (const socket of wsServer.clients) {
+      socket.send(`Server closing. Socket will shut down in ${sShutdownMargin}s`)
     }
+  }
+
+  let timeout = null
+  let resolveTimeoutProm = null
+  const timeoutProm = new Promise(resolve => {
+    resolveTimeoutProm = resolve
+    timeout = setTimeout(resolve, sShutdownMargin * 1000)
   })
-  setupHealthEndpoint(app, logger)
 
-  await app.listen({
-    port: wsPort,
-    host
-  })
+  await Promise.race([
+    timeoutProm,
+    closeProm // If all connections close before the timeout
+  ])
 
-  await dht.ready()
-  logger.info(`DHT: ${dht.host}:${dht.port} (firewalled: ${dht.firewalled})`)
+  clearTimeout(timeout)
+  resolveTimeoutProm()
 
-  return app
+  const nrRemainingClients = wsServer.clients.size
+  if (nrRemainingClients) {
+    dhtRelay.emit('ws-closing-force', ({ nrRemainingClients }))
+
+    const goingAwayCode = 1001
+    for (const socket of wsServer.clients) {
+      socket.close(goingAwayCode, 'Server is going offline')
+    }
+  }
+
+  dhtRelay.emit('ws-closing-done')
 }
 
-module.exports = setup
+module.exports = DhtRelayWss

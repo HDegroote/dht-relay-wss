@@ -2,9 +2,7 @@
 
 Websocket server for the Hyperswarm DHT Relay, with some minimal instrumentation (`/health` and `/metrics` endpoints).
 
-Warning: still in alfa, breaking changes possible till v1 release.
-
-Note also that [hyperswarm-dht-relay](https://github.com/holepunchto/hyperswarm-dht-relay) is still marked as experimental.
+Note that [hyperswarm-dht-relay](https://github.com/holepunchto/hyperswarm-dht-relay) is still marked as experimental.
 
 ## Install
 
@@ -22,7 +20,7 @@ If you would like them to be human-readable, pipe them into pino-pretty (which n
 
 `dht-relay-wss | pino-pretty`
 
-When deploying, you will typically want to run this behind a reverse-proxy which terminates the wss (websocket secure) connection.
+When deploying, you will typically want to run this behind a https reverse-proxy which terminates the wss (websocket secure) connection.
 
 ## Endpoints
 
@@ -43,11 +41,9 @@ Returns metrics in Prometheus format
 Options are specified either in a .env file or as environment variables. They include:
 
 ```
-  WS_PORT=8080,
-  DHT_PORT,
-  DHT_HOST='0.0.0.0',
-  LOG_LEVEL='info',
-  HOST='127.0.0.1',
-  S_SHUTDOWN_MARGIN=10
+  DHT_RELAY_WS_PORT,
+  DHT_RELAY_DHT_PORT,
+  DHT_RELAY_LOG_LEVEL='info',
+  DHT_RELAY_HTTP_HOST='127.0.0.1',
+  DHT_RELAY_S_SHUTDOWN_MARGIN=10
 ```
-
