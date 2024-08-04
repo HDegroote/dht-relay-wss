@@ -81,10 +81,20 @@ async function closeWsServerConnections (wsServer, dhtRelay) {
     }
   }
 
+  let timeout = null
+  let resolveTimeoutProm = null
+  const timeoutProm = new Promise(resolve => {
+    resolveTimeoutProm = resolve
+    timeout = setTimeout(resolve, sShutdownMargin * 1000)
+  })
+
   await Promise.race([
-    new Promise(resolve => setTimeout(resolve, sShutdownMargin * 1000)),
+    timeoutProm,
     closeProm // If all connections close before the timeout
   ])
+
+  clearTimeout(timeout)
+  resolveTimeoutProm()
 
   const nrRemainingClients = wsServer.clients.size
   if (nrRemainingClients) {
