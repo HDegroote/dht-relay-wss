@@ -10,7 +10,7 @@ const hypCrypto = require('hypercore-crypto')
 
 const EXEC_LOC = path.join(path.dirname(__dirname), 'run.js')
 
-const DEBUG = false
+const DEBUG = true
 
 // To force the process.on('exit') to be called on those exits too
 process.prependListener('SIGINT', () => process.exit(1))
@@ -75,7 +75,7 @@ test('Integration test, happy path', async t => {
         tSetup.pass('DHT node running')
       }
 
-      if (line.includes('Relaying to 127.0.0.1')) {
+      if (line.includes('Started relaying to 127.0.0.1')) {
         tConnectToRelay.pass('Client connected to relay')
       }
 
