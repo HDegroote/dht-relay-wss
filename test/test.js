@@ -68,7 +68,7 @@ test('Shutdown with active clients waits a while for them to exit cleanly', asyn
   await relay.close()
 })
 
-test.solo('Shutdown with active clients early-returns when all exit clenaly', async function (t) {
+test('Shutdown with active clients early-returns when all exit clenaly', async function (t) {
   const tConn = t.test('Relayed connections estbalished')
   tConn.plan(2)
 

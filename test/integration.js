@@ -125,7 +125,6 @@ test('Integration test, happy path', async t => {
 
   {
     const res = await axios.get(`${httpAddress}/metrics`)
-    console.log(res.data)
     t.is(res.data.includes('http_request_summary_seconds'), true, 'metrics endpoint includes fastify metrics')
   }
 
