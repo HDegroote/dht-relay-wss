@@ -11,7 +11,7 @@ const axios = require('axios')
 
 const EXEC_LOC = path.join(path.dirname(__dirname), 'run.js')
 
-const DEBUG = true
+const DEBUG = false
 
 // To force the process.on('exit') to be called on those exits too
 process.prependListener('SIGINT', () => process.exit(1))

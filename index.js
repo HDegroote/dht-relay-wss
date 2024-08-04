@@ -21,6 +21,7 @@ class DhtRelayWss extends ReadyResource {
   }
 
   async _close () {
+    await this.app.close()
     await this.dht.destroy()
   }
 
