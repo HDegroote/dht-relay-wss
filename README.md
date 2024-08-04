@@ -41,7 +41,7 @@ Returns metrics in Prometheus format
 Options are specified either in a .env file or as environment variables. They include:
 
 ```
-  DHT_RELAY_WS_PORT=8080,
+  DHT_RELAY_WS_PORT,
   DHT_RELAY_DHT_PORT,
   DHT_RELAY_LOG_LEVEL='info',
   DHT_RELAY_HTTP_HOST='127.0.0.1',
