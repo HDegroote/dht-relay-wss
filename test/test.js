@@ -24,9 +24,8 @@ test('Shutdown with active clients waits a while for them to exit cleanly', asyn
 
   const relay = new DhtRelayWss(app, dht, { sShutdownMargin: 1 })
   await relay.ready()
-  const address = await app.listen()
 
-  const url = address.replace('http', 'ws')
+  const url = relay.wsAddress
   const relayedSwarm = await getRelayedSwarm(url, t)
   const relayedSwarm2 = await getRelayedSwarm(url, t)
 
@@ -84,9 +83,8 @@ test('Shutdown with active clients early-returns when all exit clenaly', async f
 
   const relay = new DhtRelayWss(app, dht, { sShutdownMargin: 100 })
   await relay.ready()
-  const address = await app.listen()
 
-  const url = address.replace('http', 'ws')
+  const url = relay.wsAddress
   const relayedSwarm = await getRelayedSwarm(url, t)
   const relayedSwarm2 = await getRelayedSwarm(url, t)
 

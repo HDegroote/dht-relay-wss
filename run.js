@@ -15,7 +15,7 @@ function loadConfig () {
     wsPort: parseInt(process.env.DHT_RELAY_WS_PORT || 0),
     dhtPort: parseInt(process.env.DHT_RELAY_DHT_PORT || 0),
     logLevel: process.env.DHT_RELAY_LOG_LEVEL || 'info',
-    host: process.env.DHT_RELAY_HTTP_HOST || '127.0.0.1',
+    wsHost: process.env.DHT_RELAY_WS_HOST || '127.0.0.1',
     // Should be < 10s, lest it interfere with a fastify timeout
     // (logs a caught error if it does, so not dramatic)
     sShutdownMargin: process.env.DHT_RELAY_S_SHUTDOWN_MARGIN == null
@@ -34,16 +34,20 @@ function loadConfig () {
 }
 
 async function main () {
-  const { wsPort, dhtPort, dhtHost, logLevel, host, sShutdownMargin, bootstrap } = loadConfig()
+  const { wsPort, wsHost, dhtPort, logLevel, sShutdownMargin, bootstrap } = loadConfig()
   const logger = pino({ level: logLevel })
   promClient.collectDefaultMetrics()
 
   logger.info('Starting DHT relay')
 
-  const dht = new DHT({ port: dhtPort, host: dhtHost, bootstrap })
+  const dht = new DHT({ port: dhtPort, bootstrap })
   const app = fastify({ logger })
 
-  const dhtRelay = new DhtRelayWss(app, dht, { sShutdownMargin })
+  const dhtRelay = new DhtRelayWss(app, dht, {
+    sShutdownMargin,
+    wsPort,
+    wsHost
+  })
   setupLogging(dhtRelay, logger)
   instrument(dhtRelay)
 
@@ -61,11 +65,6 @@ async function main () {
 
   await dhtRelay.ready()
   logger.info(`DHT: ${dht.host}:${dht.port} (firewalled: ${dht.firewalled})`)
-
-  app.listen({
-    port: wsPort,
-    host
-  })
 }
 
 function setupLogging (dhtRelay, logger) {

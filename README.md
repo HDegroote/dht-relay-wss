@@ -42,8 +42,8 @@ Options are specified either in a .env file or as environment variables. They in
 
 ```
   DHT_RELAY_WS_PORT,
+  DHT_RELAY_WS_HOST='127.0.0.1',
   DHT_RELAY_DHT_PORT,
   DHT_RELAY_LOG_LEVEL='info',
-  DHT_RELAY_HTTP_HOST='127.0.0.1',
   DHT_RELAY_S_SHUTDOWN_MARGIN=10
 ```

@@ -19,6 +19,6 @@ COPY NOTICE /home/dht-relay-wss/
 USER dht-relay-wss
 WORKDIR /home/dht-relay-wss/
 
-HEALTHCHECK --retries=1 --timeout=5s CMD curl --fail http://localhost:${WS_PORT}/health
+HEALTHCHECK --retries=1 --timeout=5s CMD curl --fail http://localhost:${DHT_RELAY_WS_PORT}/health
 
 ENTRYPOINT ["node", "/home/dht-relay-wss/run.js"]
