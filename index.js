@@ -27,7 +27,7 @@ class DhtRelayWss extends ReadyResource {
 
   _setupWsServer () {
     // hack to pass our scope on to closeWssServerConnections
-    // (fastify forced a new scope when registering a plugin)
+    // (fastify forces a new scope when registering a plugin)
     const self = this
 
     this.app.register(websocketPlugin, {
