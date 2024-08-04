@@ -9,7 +9,7 @@ const { getRelayedSwarm } = require('./helpers')
 const DhtRelayWss = require('../index')
 
 test('Shutdown with active clients waits a while for them to exit cleanly', async function (t) {
-  t.plan(4)
+  t.plan(5)
 
   const tConn = t.test('Relayed connections estbalished')
   tConn.plan(2)
@@ -57,6 +57,10 @@ test('Shutdown with active clients waits a while for them to exit cleanly', asyn
 
   relay.on('ws-closing-force', ({ nrRemainingClients }) => {
     t.is(nrRemainingClients, 1, 'force closes still-connected clients after timeout') // Note: this tests the event, but not the actual behaviour
+  })
+
+  relay.on('ws-closing-done', () => {
+    t.pass('emits ws-closing-done event')
   })
 
   await relay.close()

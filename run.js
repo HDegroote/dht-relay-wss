@@ -20,7 +20,7 @@ function loadConfig () {
     // (logs a caught error if it does, so not dramatic)
     sShutdownMargin: process.env.DHT_RELAY_S_SHUTDOWN_MARGIN == null
       ? 5
-      : parseInt(process.env.S_SHUTDOWN_MARGIN)
+      : parseInt(process.env.DHT_RELAY_S_SHUTDOWN_MARGIN)
   }
 
   if (process.env.DHT_RELAY_BOOTSTRAP_PORT) { // For tests
