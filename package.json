@@ -1,6 +1,6 @@
 {
   "name": "dht-relay-wss",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "hyperswarm-dht-relay websocket server with some instrumentation",
   "main": "index.js",
   "scripts": {
